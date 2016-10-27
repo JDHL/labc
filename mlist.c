@@ -31,7 +31,8 @@ int ml_verbose=1;		/* if true, print diagnostics on stderr */
 /* ml_create - created a new mailing list */
 MList *ml_create(void)
 {	
-	// Mallocating MList
+    unsigned long i;
+	/* Mallocating MList */
 	MList *list = malloc(BUCKETCOUNT);
 	if (list == NULL) return NULL;
 	
@@ -39,15 +40,14 @@ MList *ml_create(void)
 		fprintf(stderr, "mlist: creating mailing list\n");
 
 	list->size = BUCKETCOUNT;
-	unsigned long i;
 
-	// Mallocating bucket array
+	/* Mallocating bucket array */
 	list->buckets = malloc(sizeof(Bucket)*BUCKETCOUNT);
 	if (list->buckets == NULL) return NULL;
 
 	for (i = 0; i < (list->size); i++)
 	{	
-		// Mallocating bucket
+		/* Mallocating bucket */
 		list->buckets[i] = malloc(sizeof(Bucket));
 		if (list->buckets[i] == NULL) return NULL;
 
@@ -65,11 +65,10 @@ MList *ml_create(void)
 int ml_add(MList **ml, MEntry *me)
 {	
 	MList *list;
-
-
 	Bucket *bucket;
+    unsigned int pos;
 	
-	// Mallocating memory for entry
+	/* Mallocating memory for entry */
 	Node *bi = malloc(sizeof(Node));
 	
 	list = *ml;
@@ -84,19 +83,19 @@ int ml_add(MList **ml, MEntry *me)
 
 
 
-	// Computing a new hash for the entry
-	unsigned int pos = me_hash(me, list->size);
+	/* Computing a new hash for the entry */
+	pos = me_hash(me, list->size);
 	bucket = list->buckets[pos];
 
 	
 	if(bucket->head == NULL) 
 	{
-    	// If bucket is empty, then the new entry node is set as the head.
+    	/* If bucket is empty, then the new entry node is set as the head.*/
         bucket->head = bi;
     } 
     else 
     {	
-    	// Otherwise new entry is the last entry in the bucket.
+    	/* Otherwise new entry is the last entry in the bucket.*/
         bucket->tail->next = bi;
     }
 
@@ -105,16 +104,22 @@ int ml_add(MList **ml, MEntry *me)
 	bucket->entries += 1;
 
     if((unsigned)(bucket->entries) > (list->size)){
-       unsigned long i;
-       printf("Starting resizing!\n");
+       unsigned long i, j;
+       Bucket *bucket;
+       Node *nodeItem;
+       Node *oldNodeItem;
 
-       //Mallocating resized MList
+       /* Mallocating resized MList */
        MList *resizeList = malloc(list->size + STEP);
        resizeList->size = list->size + STEP;
-       // Mallocating new bucket Array
+
+       /* Mallocating new bucket Array for resized MList */
        resizeList->buckets = malloc(sizeof(Bucket)*(resizeList->size));
+
+       if(ml_verbose)
+           fprintf(stderr, "mlist: resizing table\n");
        for (i = 0; i < (resizeList->size); i++) {
-           // Mallocating bucket
+           /* Mallocating bucket for resized MList */
            resizeList->buckets[i] = malloc(sizeof(Bucket));
            resizeList->buckets[i]->entries = 0;
            resizeList->buckets[i]->head = NULL;
@@ -130,10 +135,6 @@ int ml_add(MList **ml, MEntry *me)
                }
            }
        }
-       Bucket *bucket;
-       Node *nodeItem;
-       Node *oldNodeItem;
-       unsigned long j;
        for(j=0; j < (list->size); j++){
             bucket = list->buckets[j];
             nodeItem = bucket->head;
@@ -159,10 +160,11 @@ MEntry *ml_lookup(MList *ml, MEntry *me)
 {
 	Bucket *bucket;
 	Node *nodeItem;
+    unsigned long i;
+
 	if (ml_verbose)
 		fprintf(stderr, "mlist: ml_lookup() entered\n");
 
-	unsigned long i;
 	for (i = 0; i < (ml->size); i++)
 	{
 		bucket = ml->buckets[i];
@@ -181,11 +183,11 @@ void ml_destroy(MList *ml)
 	Bucket *bucket;
 	Node *nodeItem;
 	Node *oldNodeItem;
+    unsigned long i;
 
 	if (ml_verbose)
 		fprintf(stderr, "mlist: ml_destroy() entered\n");
 
-	unsigned long i;
 	for (i = 0; i < (ml->size); i++)
 	{
 		bucket = ml->buckets[i];
